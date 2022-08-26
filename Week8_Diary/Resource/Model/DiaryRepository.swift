@@ -6,6 +6,8 @@
 //
 
 import RealmSwift
+import UIKit
+
 
 
 class DiaryRepository {
@@ -17,6 +19,8 @@ class DiaryRepository {
     }
     
     let localRealm = try! Realm()
+    
+    var filterType: Filter = .all
     
     
     func featchData(filtertype type: Filter) -> Results<Diary> {
@@ -40,4 +44,43 @@ class DiaryRepository {
         }
     }
     
+    func deleteDatas<T: Sequence>(data: T) where T.Iterator.Element: ObjectBase  {
+        do {
+           try localRealm.write({
+                localRealm.delete(data)
+            })
+        } catch {
+            print("메모를 제거하는데 error가 생겼습니다.")
+        }
+    }
+    
+    func deleData(data: ObjectBase) {
+        do {
+           try localRealm.write({
+                localRealm.delete(data)
+            })
+        } catch {
+            print("메모를 제거하는데 error가 생겼습니다.")
+        }
+    }
+    
+    func updatecheckBoxData(task: Diary) {
+        do {
+           try localRealm.write({
+               task.checkBox = !task.checkBox
+            })
+        } catch {
+            print("checkBox 변경 안됨")
+        }
+    }
+    
+    func updateFavoriteData(task: Diary) {
+        do {
+           try localRealm.write({
+               task.favorite = !task.favorite
+            })
+        } catch {
+            print("checkBox 변경 안됨")
+        }
+    }
 }

@@ -14,14 +14,14 @@ class DiaryViewController: BaseViewController {
     
     // variable
     let tableview = UITableView()
-
+    
     let addTextView = DiaryAddTextView()
     
-    let localRealm = try! Realm()
+    let repository = DiaryRepository()
     
-    var filterType: Filter = .all {
+    var filterType: DiaryRepository.Filter = .all {
         didSet {
-            featchData(filtertype: filterType)
+            data = repository.featchData(filtertype: filterType)
         }
     }
     
@@ -61,47 +61,18 @@ class DiaryViewController: BaseViewController {
     }
     
     override func setData() {
-        featchData(filtertype: filterType)
+        data = repository.featchData(filtertype: filterType)
     }
     
     override func setupBinding() {
         addTextView.addText = { [weak self] data in
-            do {
-                try self?.localRealm.write({
-                    self?.localRealm.add(data)
-                    self?.featchData(filtertype: self!.filterType)
-                })
-            } catch {
-                self?.showAlertMessage(title: "error 났음")
-            }
+            self?.repository.addData(data: data)
+            self?.data = self?.repository.featchData(filtertype: self!.filterType)
         }
     }
     
-
-    // Custom func
-    func setNavigationBar() {
-        navigationController?.navigationBar.tintColor = .black
-        
-        let filter = UIBarButtonItem(title: "필터", style: .plain, target: self, action: nil)
     
-        let all = UIAction(title: Filter.all.rawValue , image: nil, handler: { [weak self] _ in
-            self?.filterType = .all
-        })
-        let favorite = UIAction(title: Filter.favorite.rawValue , image: UIImage(systemName: "star.fill"), handler: { [weak self] _ in
-            self?.filterType = .favorite
-        })
-        let checkBox = UIAction(title: Filter.check.rawValue , image: UIImage(systemName: "checkmark.square.fill"), handler: { [weak self] _ in
-            self?.filterType = .check
-        })
-        filter.menu = UIMenu(title: "", identifier: nil, options: .displayInline, children: [all, favorite, checkBox])
-        navigationItem.leftBarButtonItems = [filter]
-        
-        let delete = UIBarButtonItem(image: UIImage(systemName: "trash"), style: .plain, target: self, action: #selector(deleteTodo))
-        let bakcUp = UIBarButtonItem(title: "백업", style: .plain, target: self, action: #selector(backupTodo))
-        navigationItem.rightBarButtonItems = [delete, bakcUp]
-    }
-    
-    
+    // Action
     @objc
     func deleteTodo() {
         deletShowAlert()
@@ -113,6 +84,30 @@ class DiaryViewController: BaseViewController {
         self.present(vc, animated: true)
     }
     
+    
+    // Custom func
+    func setNavigationBar() {
+        navigationController?.navigationBar.tintColor = .black
+        
+        let filter = UIBarButtonItem(title: "필터", style: .plain, target: self, action: nil)
+        
+        let all = UIAction(title: DiaryRepository.Filter.all.rawValue , image: nil, handler: { [weak self] _ in
+            self?.filterType = .all
+        })
+        let favorite = UIAction(title: DiaryRepository.Filter.favorite.rawValue , image: UIImage(systemName: "star.fill"), handler: { [weak self] _ in
+            self?.filterType = .favorite
+        })
+        let checkBox = UIAction(title: DiaryRepository.Filter.check.rawValue , image: UIImage(systemName: "checkmark.square.fill"), handler: { [weak self] _ in
+            self?.filterType = .check
+        })
+        filter.menu = UIMenu(title: "", identifier: nil, options: .displayInline, children: [all, favorite, checkBox])
+        navigationItem.leftBarButtonItems = [filter]
+        
+        let delete = UIBarButtonItem(image: UIImage(systemName: "trash"), style: .plain, target: self, action: #selector(deleteTodo))
+        let bakcUp = UIBarButtonItem(title: "백업", style: .plain, target: self, action: #selector(backupTodo))
+        navigationItem.rightBarButtonItems = [delete, bakcUp]
+    }
+    
     func deletShowAlert() {
         let data = self.data.filter { $0.checkBox == true }
         
@@ -120,16 +115,9 @@ class DiaryViewController: BaseViewController {
             showAlertMessage(title: "제거할 리스트를 선택해주세요")
         } else {
             let alert = UIAlertController(title: nil, message: "해당 리스트를 제거하시겠습니까?", preferredStyle: .alert)
-            let ok = UIAlertAction(title: "예", style: .default) { _ in
-                do {
-                    try self.localRealm.write({
-                        self.localRealm.delete(data)
-                        self.featchData(filtertype: self.filterType)
-                    })
-                }
-                catch {
-                    print(error)
-                }
+            let ok = UIAlertAction(title: "예", style: .default) {[weak self] _ in
+                self?.repository.deleteDatas(data: data)
+                self?.data = self?.repository.featchData(filtertype: self!.filterType)
             }
             let cancle = UIAlertAction(title: "아니요", style: .cancel)
             alert.addAction(ok)
@@ -154,70 +142,33 @@ extension DiaryViewController: UITableViewDataSource, UITableViewDelegate {
         cell.selectionStyle = .none
         cell.setData(data: data[indexPath.row])
         cell.checkBoxClicked = { [weak self] in
-            do {
-                try self?.localRealm.write({
-                    self?.data[indexPath.row].checkBox = !(self?.data[indexPath.row].checkBox)!
-                    self?.featchData(filtertype: self!.filterType)
-                })
-            } catch {
-                self?.showAlertMessage(title: "checkBox 변경 안됨!")
+            if let data = self?.data[indexPath.row] {
+                self?.repository.updatecheckBoxData(task: data)
+                self?.data = self?.repository.featchData(filtertype: self!.filterType)
             }
         }
+        
         cell.changeFavorite = { [weak self] in
-            do {
-                try self?.localRealm.write({
-                    self?.data[indexPath.row].favorite = !(self?.data[indexPath.row].favorite)!
-                    self?.featchData(filtertype: self!.filterType)
-                })
-            } catch {
-                self?.showAlertMessage(title: "Favorite 변경 안됨!")
+            if let data = self?.data[indexPath.row] {
+                self?.repository.updateFavoriteData(task: data)
+                self?.data = self?.repository.featchData(filtertype: self!.filterType)
             }
         }
         return cell
     }
     
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let delete = UIContextualAction(style: .destructive, title: "삭제") { [self] action, view, handler in
-            do {
-                try localRealm.write({
-                    localRealm.delete(data[indexPath.row])
-                    featchData(filtertype: filterType)
-                    
-                })
-            } catch {
-                print("delete 관련 error")
+        let delete = UIContextualAction(style: .destructive, title: "삭제") { [weak self] action, view, handler in
+            if let data = self?.data[indexPath.row] {
+                self?.repository.deleData(data: data)
+                self?.data = self?.repository.featchData(filtertype: self!.filterType)
             }
         }
         
         delete.backgroundColor = .red
-        
-         let trailingButton = UISwipeActionsConfiguration(actions: [delete])
+        let trailingButton = UISwipeActionsConfiguration(actions: [delete])
         
         return trailingButton
-    }
-    
-}
-
-
-// - MARK: filter
-
-extension DiaryViewController {
-    
-    enum Filter: String, CaseIterable {
-        case all = "전체"
-        case favorite = "즐겨찾기"
-        case check = "선택"
-    }
-    
-    func featchData(filtertype type: Filter) {
-        switch type {
-        case .all:
-            data = localRealm.objects(Diary.self).sorted(byKeyPath: "content", ascending: true).sorted(byKeyPath: "favorite", ascending: false).sorted(byKeyPath: "checkBox" , ascending: true)
-        case .favorite:
-            data = localRealm.objects(Diary.self).where({ $0.favorite == true })
-        case .check:
-            data = localRealm.objects(Diary.self).where({ $0.checkBox == true })
-        }
     }
     
 }
