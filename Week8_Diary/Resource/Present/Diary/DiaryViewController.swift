@@ -32,7 +32,7 @@ class DiaryViewController: BaseViewController {
     }
     
     
-    // Life Cycle
+    // Life Cycle    
     override func setupAttributes() {
         super.setupAttributes()
         
@@ -81,6 +81,7 @@ class DiaryViewController: BaseViewController {
     @objc
     func backupTodo() {
         let vc = BackUpViewController()
+        vc.modalPresentationStyle = .fullScreen
         self.present(vc, animated: true)
     }
     

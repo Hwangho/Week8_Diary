@@ -19,6 +19,8 @@ class BackUpViewController: BaseViewController {
     
     let tableview = UITableView()
     
+    let backButton = UIButton()
+    
     var data: [URL] = [] {
         didSet {
             tableview.reloadData()
@@ -26,7 +28,13 @@ class BackUpViewController: BaseViewController {
     }
     
     var backupData: ((Int) -> ())?
-
+    
+    let formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyMMdd"
+        return formatter
+    }()
+    
     
     override func setupAttributes() {
         super.setupAttributes()
@@ -44,6 +52,10 @@ class BackUpViewController: BaseViewController {
         stackView.axis = .horizontal
         stackView.spacing = 30
         stackView.distribution = .fillEqually
+        
+        backButton.setImage(UIImage(systemName: "xmark"), for: .normal)
+        backButton.tintColor = .black
+        backButton.addTarget(self, action: #selector(tapBackButton), for: .touchUpInside)
         
         tableview.delegate = self
         tableview.dataSource = self
@@ -65,8 +77,12 @@ class BackUpViewController: BaseViewController {
             make.width.equalTo(100)
         }
         
-        [stackView, tableview].forEach {
+        [backButton, stackView, tableview].forEach {
             view.addSubview($0)
+        }
+        backButton.snp.makeConstraints { make in
+            make.top.trailing.equalTo(view.safeAreaLayoutGuide).inset(20)
+            make.width.height.equalTo(40)
         }
         
         stackView.snp.makeConstraints { make in
@@ -89,7 +105,35 @@ class BackUpViewController: BaseViewController {
     override func setData() {
         data = fetchDocumentZipFile()
     }
-
+    
+    override func setupBinding() {
+        backupData = { [weak self] row in
+            let fileURL = self?.data[row]
+            
+            guard let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                self?.showAlertMessage(title: "Document 파일 통로를 못찾았습니다.")
+                return
+            }
+            
+            do {
+                try Zip.unzipFile(fileURL!, destination: path, overwrite: true, password: nil, progress: { progress in
+                    print("progress: \(progress)")
+                }, fileOutputHandler: { unzippedFile in
+                    print("unzippedFile: \(unzippedFile)")
+                    self?.showAlertMessage(title: "복구가 완료 되었습니다.")
+                })
+            } catch {
+                self?.showAlertMessage(title: "압축 해제에 실패했습니다.")
+            }
+        }
+        
+    }
+    
+    @objc
+    func tapBackButton() {
+        dismiss(animated: true)
+    }
+    
     @objc func tapBackup() {
         backupDiary()
     }
@@ -99,6 +143,7 @@ class BackUpViewController: BaseViewController {
         restoreButtonClicked()
     }
     
+
     
     // MARK: 데이터 백업
     func backupDiary() {
@@ -108,19 +153,21 @@ class BackUpViewController: BaseViewController {
             showAlertMessage(title: "Document 파일 통로를 못찾았습니다.")
             return
         }
-        print("path ==== \(path)")
+        print("❤️path ==== \(path)❤️")
         let realmFile = path.appendingPathComponent("default.realm")
         
         guard FileManager.default.fileExists(atPath: realmFile.path) else {
             showAlertMessage(title: "배업할 파일이 없습니다.")
             return
         }
-        urlPaths.append(URL(string:  realmFile.path)!)
+        urlPaths.append(URL(string: realmFile.path)!)
         
         do {
-            let zipFilePath = try Zip.quickZipFiles(urlPaths, fileName: "Diary_\(Date())")
+            let zipFilePath = try Zip.quickZipFiles(urlPaths, fileName: "Diary_\(formatter.string(from: Date()))")
             print("Archive Location: \(zipFilePath)")
-            showActivityViewContrioller()
+            data = fetchDocumentZipFile()
+//            showActivityViewContrioller()     // iphone에 저장할 때
+            
         } catch {
             showAlertMessage(title: "압축에 실패하였습니다.")
         }
@@ -159,10 +206,10 @@ class BackUpViewController: BaseViewController {
             let docs = try FileManager.default.contentsOfDirectory(at: path, includingPropertiesForKeys: nil)
             print("docs: \(docs)")
 
-            let zip = docs.filter { $0.pathExtension == "zip" }.map { $0.lastPathComponent }
+            let zip = docs.filter { $0.pathExtension == "zip" }
             print("zip: \(zip)")
             
-            return docs
+            return zip
         } catch {
             print("Error")
             return []
@@ -179,25 +226,56 @@ extension BackUpViewController: UIDocumentPickerDelegate {
     }
     
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let selecteFileURL = urls.first else {
+            showAlertMessage(title: "선택하신 파일에 오류가 있습니다.")
+            return
+        }
+        
         guard let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
             showAlertMessage(title: "Document 파일 통로를 못찾았습니다.")
             return
         }
         
-        backupData = { row in
-            let fileURL = self.data[row]
-            
-            do {
-                try Zip.unzipFile(fileURL, destination: path, overwrite: true, password: nil, progress: { progress in
-                    print("progress: \(progress)")
-                }, fileOutputHandler: { unzippedFile in
-                    print("unzippedFile: \(unzippedFile)")
-                    self.showAlertMessage(title: "복구가 완료 되었습니다.")
-                })
-            } catch {
-                self.showAlertMessage(title: "압축 해제에 실패했습니다.")
-            }
-        }
+        // 선택된 파일의 이름과 도큐먼트 통로를 합쳐서 총 file 위치 정보 만들기  -  .../Document + fileName
+//        let sandboxFileURL = path.appendingPathComponent(selecteFileURL.lastPathComponent)
+//
+//        if FileManager.default.fileExists(atPath: sandboxFileURL.path) {
+//            backupData = { row in
+//                let fileURL = self.data[row]
+//                do {
+//                    try Zip.unzipFile(fileURL, destination: path, overwrite: true, password: nil, progress: { progress in
+//                        print("progress: \(progress)")
+//                    }, fileOutputHandler: { unzippedFile in
+//                        print("unzippedFile: \(unzippedFile)")
+//                        self.showAlertMessage(title: "복구가 완료 되었습니다.")
+//                    })
+//                } catch {
+//                    self.showAlertMessage(title: "압축 해제에 실패했습니다.")
+//                }
+//            }
+//        }
+//        else {
+//            backupData = { row in
+//                let fileURL = self.data[row]
+//
+//                do {
+//                    // 파일 앱의 zip -> 도큐먼트 폴더에 복사
+//                    try FileManager.default.copyItem(at: selecteFileURL, to: sandboxFileURL)
+//
+//                    try Zip.unzipFile(fileURL, destination: path, overwrite: true, password: nil, progress: { progress in
+//                        print("progress: \(progress)")
+//                    }, fileOutputHandler: { unzippedFile in
+//                        print("unzippedFile: \(unzippedFile)")
+//                        self.showAlertMessage(title: "복구가 완료 되었습니다.")
+//                    })
+//                } catch {
+//                    self.showAlertMessage(title: "압축 해제에 실패했습니다.")
+//                }
+//            }
+//
+//
+//        }
+        
     }
 }
 
