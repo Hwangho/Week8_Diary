@@ -32,7 +32,13 @@ class DiaryViewController: BaseViewController {
     }
     
     
-    // Life Cycle    
+    // Life Cycle
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        data = repository.featchData(filtertype: filterType)
+    }
+    
     override func setupAttributes() {
         super.setupAttributes()
         

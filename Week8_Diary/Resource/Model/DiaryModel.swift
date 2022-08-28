@@ -9,22 +9,72 @@ import UIKit
 import RealmSwift
 
 class Diary: Object {
+    
+    private let formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        return formatter
+    }()
+    
     @Persisted(primaryKey: true) var _id: ObjectId
     @Persisted var content: String
     @Persisted var favorite: Bool
     @Persisted var checkBox: Bool
     @Persisted var dateRegistered: Date
     
-    convenience init(content: String, favorite: Bool = false, checkBox: Bool = false) {
+    convenience init(content: String, favorite: Bool = false, checkBox: Bool = false, dateRegistered: Date = Date() ) {
         self.init()
         self.content = content
         self.favorite = favorite
         self.checkBox = checkBox
-        self.dateRegistered = Date()
+        self.dateRegistered = dateRegistered
     }
+    
+    func serialize() -> [String : Any] {
+        return [
+            "id" : 1,
+            "content" : self.content,
+            "favorite" : self.favorite,
+            "checkBox" : self.checkBox,
+            "dateRegistered" : dateChangeStirng(self.dateRegistered)  // Date()는 json으로 변경 불가!!!! String으로 바꿔줘야 한다!!
+       ]
+    }
+    
+    private func dateChangeStirng(_ date: Date) -> String {
+        return formatter.string(from: date)
+    }
+    
+    private func stringChangeDate(_ string: String) -> Date {
+        return formatter.date(from: string)!
+    }
+    
+
 }
 
 
+extension Date {
+     func dateChangeStirng() -> String {
+        let formatter: DateFormatter = {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+            return formatter
+        }()
+        
+        return formatter.string(from: self)
+    }
+}
+
+extension String {
+     func stringChangeDate() -> Date {
+        let formatter: DateFormatter = {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+            return formatter
+        }()
+        
+        return formatter.date(from: self)!
+    }
+}
 
 
 extension Dictionary {

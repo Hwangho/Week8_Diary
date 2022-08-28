@@ -44,6 +44,15 @@ class DiaryRepository {
         }
     }
     
+    func addJsonData(json: String) {
+        let data = json.data(using: .utf8)!
+        
+        try! localRealm.write {
+            let json = try! JSONSerialization.jsonObject(with: data, options: [])
+            localRealm.create(Diary.self, value: json)
+        }
+    }
+    
     func deleteDatas<T: Sequence>(data: T) where T.Iterator.Element: ObjectBase  {
         do {
            try localRealm.write({
@@ -61,6 +70,16 @@ class DiaryRepository {
             })
         } catch {
             print("메모를 제거하는데 error가 생겼습니다.")
+        }
+    }
+    
+    func deleDataAll() {
+        do {
+           try localRealm.write({
+                localRealm.deleteAll()
+            })
+        } catch {
+            print("메모를 모두 제거하는데 error가 생겼습니다.")
         }
     }
     
@@ -82,5 +101,34 @@ class DiaryRepository {
         } catch {
             print("checkBox 변경 안됨")
         }
+    }
+    
+    func changeJson() -> String {
+        let realm = try! Realm()
+        
+        let data = realm.objects(Diary.self)
+        var array: [[String : Any]] = []
+        var allJsonString: String = ""
+        
+        data.forEach { diary in
+            array.append(diary.serialize())
+        }
+        
+        // Insert from data containing JSON
+        try! realm.write {
+            
+            array.forEach { dic in
+                do {
+                    let jsonData = try JSONSerialization.data(withJSONObject: dic, options: [.prettyPrinted])
+                    let jsonString = String(data: jsonData, encoding: String.Encoding.ascii)
+                    allJsonString += jsonString! + ","
+                } catch {
+                    print(error.localizedDescription)
+                }
+            }
+            
+        }
+        
+        return "[\(allJsonString)]"
     }
 }

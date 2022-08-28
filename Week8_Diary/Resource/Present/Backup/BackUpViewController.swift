@@ -7,6 +7,7 @@
 
 import UIKit
 
+import SwiftyJSON
 import Zip
 
 class BackUpViewController: BaseViewController {
@@ -20,6 +21,8 @@ class BackUpViewController: BaseViewController {
     let tableview = UITableView()
     
     let backButton = UIButton()
+    
+    let repository = DiaryRepository()
     
     var data: [URL] = [] {
         didSet {
@@ -121,6 +124,9 @@ class BackUpViewController: BaseViewController {
                 }, fileOutputHandler: { unzippedFile in
                     print("unzippedFile: \(unzippedFile)")
                     self?.showAlertMessage(title: "복구가 완료 되었습니다.")
+                    self?.realmDeleteData()
+                    self?.realmAddJson()
+                    
                 })
             } catch {
                 self?.showAlertMessage(title: "압축 해제에 실패했습니다.")
@@ -135,6 +141,7 @@ class BackUpViewController: BaseViewController {
     }
     
     @objc func tapBackup() {
+        addSwiftFile()
         backupDiary()
     }
 
@@ -143,9 +150,70 @@ class BackUpViewController: BaseViewController {
         restoreButtonClicked()
     }
     
-
+    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     
-    // MARK: 데이터 백업
+    func realmChangeJson() {
+        
+    }
+    // 2. 복구 시realm 데이터 제거
+    func realmDeleteData() {
+        repository.deleDataAll()
+    }
+    
+    // 3. 복구시 json데이터 불러와서 realm에 넣기
+    func realmAddJson() {
+        
+        guard let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            showAlertMessage(title: "Document 파일 통로를 못찾았습니다.")
+            return
+        }
+        do {
+            let fileURL = path.appendingPathComponent("DiaryData.json")
+            let data = try Data(contentsOf: fileURL)
+            
+            let jsonString = String(data: data, encoding: String.Encoding.ascii)
+            let jsonArray = try! JSON(data: data)
+            
+            
+            for json in jsonArray.arrayValue {
+                guard let id = json["id"].int,
+                      let content = json["content"].string,
+                      let favorite = json["favorite"].bool,
+                      let checkBox = json["checkBox"].bool,
+                      let dateRegistered = json["dateRegistered"].string else {
+                    continue
+                }
+                let diary = Diary(content: content, favorite: favorite, checkBox: checkBox, dateRegistered: dateRegistered.stringChangeDate())
+                
+                repository.addData(data: diary)
+            }            
+        } catch {
+            print("json 파일에서 데이터를 불러오지 못했습니다.")
+        }
+        
+    }
+    
+    // 1. realm 데이터를 json으로 변경 후 document에 저장!
+    func addSwiftFile() {
+        guard let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            showAlertMessage(title: "Document 파일 통로를 못찾았습니다.")
+            return
+        }
+        print("❤️path ==== \(path)❤️")
+        
+        let fileURL = path.appendingPathComponent("DiaryData.json")
+        
+        print("두근두근!!! ====> \(repository.changeJson())")
+        let myTextString = NSString(string: repository.changeJson())
+        try? myTextString.write(to: fileURL, atomically: true, encoding: String.Encoding.utf8.rawValue)
+        
+    }
+    
+    
+    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    
+    
+    // MARK: 데이터 백업    json 데이터만 저장
     func backupDiary() {
         var urlPaths = [URL]()
         
@@ -154,7 +222,7 @@ class BackUpViewController: BaseViewController {
             return
         }
         print("❤️path ==== \(path)❤️")
-        let realmFile = path.appendingPathComponent("default.realm")
+        let realmFile = path.appendingPathComponent("DiaryData.json")
         
         guard FileManager.default.fileExists(atPath: realmFile.path) else {
             showAlertMessage(title: "배업할 파일이 없습니다.")

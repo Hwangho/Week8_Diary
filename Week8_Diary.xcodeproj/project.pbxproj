@@ -35,6 +35,7 @@
 		0ECAE4A728B7E0A8007B116D /* BackUpViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECAE4A628B7E0A8007B116D /* BackUpViewController.swift */; };
 		0ECAE4AA28B7E82E007B116D /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = 0ECAE4A928B7E82E007B116D /* Zip */; };
 		0ECAE4B128B89D27007B116D /* DiaryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECAE4B028B89D27007B116D /* DiaryRepository.swift */; };
+		0ECAE4B428BB4267007B116D /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 0ECAE4B328BB4267007B116D /* SwiftyJSON */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -74,6 +75,7 @@
 				0ECAE49F28B7671F007B116D /* RealmSwift in Frameworks */,
 				0ECAE49D28B7671F007B116D /* Realm in Frameworks */,
 				0ECAE4AA28B7E82E007B116D /* Zip in Frameworks */,
+				0ECAE4B428BB4267007B116D /* SwiftyJSON in Frameworks */,
 				0E0EF4F928B4C592008769CB /* SnapKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -112,7 +114,6 @@
 			children = (
 				0ECAE49228B74A1C007B116D /* Protocol */,
 				0ECAE49128B749D4007B116D /* Extension */,
-				0E0EF4DD28B4C49C008769CB /* ReusableProtocol.swift */,
 				0E0EF4DE28B4C49C008769CB /* BaseView */,
 				0E0EF4E328B4C49C008769CB /* Constants */,
 			);
@@ -194,6 +195,7 @@
 		0ECAE49228B74A1C007B116D /* Protocol */ = {
 			isa = PBXGroup;
 			children = (
+				0E0EF4DD28B4C49C008769CB /* ReusableProtocol.swift */,
 				0ECAE49328B74A39007B116D /* TextFieldKeyBoard.swift */,
 			);
 			path = Protocol;
@@ -246,6 +248,7 @@
 				0ECAE49C28B7671F007B116D /* Realm */,
 				0ECAE49E28B7671F007B116D /* RealmSwift */,
 				0ECAE4A928B7E82E007B116D /* Zip */,
+				0ECAE4B328BB4267007B116D /* SwiftyJSON */,
 			);
 			productName = Week8_Diary;
 			productReference = 0E0EF4C528B4C46D008769CB /* Week8_Diary.app */;
@@ -279,6 +282,7 @@
 				0E0EF4F728B4C592008769CB /* XCRemoteSwiftPackageReference "SnapKit" */,
 				0ECAE49B28B7671F007B116D /* XCRemoteSwiftPackageReference "realm-swift" */,
 				0ECAE4A828B7E82E007B116D /* XCRemoteSwiftPackageReference "Zip" */,
+				0ECAE4B228BB4266007B116D /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
 			);
 			productRefGroup = 0E0EF4C628B4C46D008769CB /* Products */;
 			projectDirPath = "";
@@ -571,6 +575,14 @@
 				minimumVersion = 2.0.0;
 			};
 		};
+		0ECAE4B228BB4266007B116D /* XCRemoteSwiftPackageReference "SwiftyJSON" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftyJSON/SwiftyJSON.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -593,6 +605,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0ECAE4A828B7E82E007B116D /* XCRemoteSwiftPackageReference "Zip" */;
 			productName = Zip;
+		};
+		0ECAE4B328BB4267007B116D /* SwiftyJSON */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0ECAE4B228BB4266007B116D /* XCRemoteSwiftPackageReference "SwiftyJSON" */;
+			productName = SwiftyJSON;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
